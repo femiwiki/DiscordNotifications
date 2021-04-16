@@ -2,6 +2,10 @@
 
 Versions and bullets are arranged chronologically from latest to oldest.
 
+## Unrelease
+
+-  Localisation updates from https://translatewiki.net.
+
 ## 1.0.0-femiwiki
 
 ### Breaking changes
