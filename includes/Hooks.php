@@ -11,15 +11,15 @@ use SpecialPage;
 use Title;
 
 class Hooks implements
-	\MediaWiki\Storage\Hook\PageSaveCompleteHook,
-	\MediaWiki\Page\Hook\ArticleDeleteCompleteHook,
-	\MediaWiki\Hook\PageMoveCompleteHook,
-	\MediaWiki\Hook\AddNewAccountHook,
+	\MediaWiki\Auth\Hook\LocalUserCreatedHook,
+	\MediaWiki\Hook\AfterImportPageHook,
 	\MediaWiki\Hook\BlockIpCompleteHook,
+	\MediaWiki\Hook\PageMoveCompleteHook,
 	\MediaWiki\Hook\UploadCompleteHook,
+	\MediaWiki\Page\Hook\ArticleDeleteCompleteHook,
 	\MediaWiki\Page\Hook\ArticleProtectCompleteHook,
-	\MediaWiki\User\Hook\UserGroupsChangedHook,
-	\MediaWiki\Hook\AfterImportPageHook
+	\MediaWiki\Storage\Hook\PageSaveCompleteHook,
+	\MediaWiki\User\Hook\UserGroupsChangedHook
 {
 
 	/**
@@ -153,7 +153,7 @@ class Hooks implements
 	/**
 	 * @inheritDoc
 	 */
-	public function onAddNewAccount( $user, $byEmail ) {
+	public function onLocalUserCreated( $user, $autocreated ) {
 		global $wgDiscordNotificationsActions, $wgDiscordNotificationsDisplay;
 
 		if ( !$wgDiscordNotificationsActions['new-user'] ) {

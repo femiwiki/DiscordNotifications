@@ -2,9 +2,10 @@
 
 Versions and bullets are arranged chronologically from latest to oldest.
 
-## Unrelease
+## Unreleased
 
--  Localisation updates from https://translatewiki.net.
+- Move from deprecated AddNewAccount hook to new LocalUserCreated hook. (https://github.com/femiwiki/DiscordNotifications/issues/2)
+- Localisation updates from https://translatewiki.net.
 
 ## 1.0.0-femiwiki
 
