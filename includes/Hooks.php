@@ -2,6 +2,8 @@
 
 namespace MediaWiki\Extension\DiscordNotifications;
 
+use AbuseFilterVariableHolder;
+use AFComputedVariable;
 use APIBase;
 use Config;
 use Exception;
@@ -9,6 +11,7 @@ use ExtensionRegistry;
 use MediaWiki\MediaWikiServices;
 use SpecialPage;
 use Title;
+use User;
 
 class Hooks implements
 	\MediaWiki\Auth\Hook\LocalUserCreatedHook,
@@ -338,6 +341,14 @@ class Hooks implements
 			return;
 		}
 
+		# self::APIFlowAfterExecute() is used instead of this if available.
+		if ( ExtensionRegistry::getInstance()->isLoaded( 'Abuse Filter' )
+			&& in_array( $action, [ 'new-topic', 'edit-header', 'edit-post', 'edit-title', 'edit-topic-summary',
+				'reply' ] )
+		) {
+			return;
+		}
+
 		global $wgUser;
 		switch ( $action ) {
 			case 'edit-header':
@@ -421,6 +432,116 @@ class Hooks implements
 		}
 		$core = new Core();
 		$core->pushDiscordNotify( $message, $wgUser, 'flow' );
+	}
+
+	/**
+	 * self::APIFlowAfterExecute() is not triggered if the browser of the user does not support JavaScript.
+	 * To avoid that cases, we use this AbuseFilter hook if the extension is loaded.
+	 * @param AbuseFilterVariableHolder $vars
+	 * @param Title $title Title object target of the action
+	 * @param User $user User object performer of the action
+	 * @param array &$skipReasons Array of reasons why the action should be skipped
+	 * @return bool|void True or no return value to continue or false to abort
+	 */
+	public static function onAbuseFilterShouldFilterAction(
+		AbuseFilterVariableHolder $vars,
+		Title $title,
+		User $user,
+		array &$skipReasons
+	) {
+		global $wgDiscordNotificationsActions;
+
+		if ( !$wgDiscordNotificationsActions['flow'] || !ExtensionRegistry::getInstance()->isLoaded( 'Flow' ) ) {
+			return;
+		}
+
+		if ( Core::titleIsExcluded( $title ) ) {
+			return;
+		}
+
+		// Do not ruin Flow\Tests\Api\Api*Test
+		if ( !defined( 'MW_PHPUNIT_TEST' ) ) {
+			// It is tricky but possible to fetch the topic if the below condition matches.
+			// This must be done before the any call of $vars->getVar().
+			$newWikitext = $vars->mVars['new_wikitext'];
+			if ( $vars->mVars['action'] == 'new-post' && $newWikitext instanceof AFComputedVariable ) {
+				$rev = $newWikitext->mParameters['revision'];
+				$topicTitle = Title::newFromText( $rev->getPostId()->getAlphadecimal(), NS_TOPIC );
+			}
+		}
+
+		$userLink = LinkRenderer::getDiscordUserText( $user );
+		$action = $vars->getVar( 'action' )->data;
+		$pageTitleText = $vars->getVar( 'page_title' )->data;
+		$boardPrefixedTitleText = $vars->getVar( 'board_prefixedtitle' )->data;
+		$pagePrefixedTitleText = $vars->getVar( 'page_prefixedtitle' )->data;
+		$boardTitle = Title::newFromText( $boardPrefixedTitleText );
+		$pageTitle = Title::newFromText( $pagePrefixedTitleText );
+		if ( defined( 'MW_PHPUNIT_TEST' ) ) {
+			// Do not ruin Flow\Tests\Api\Api*Test
+			$oldWikitext = '';
+			$newWikitext = '';
+		} else {
+			$oldWikitext = $vars->getVar( 'old_wikitext' )->data;
+			$newWikitext = $vars->getVar( 'new_wikitext' )->data;
+		}
+
+		// Skip notifications if the reply is the first, in fact non a "re"-ply.
+		// The first reply is a content of the topic.
+		if ( $action == 'reply' && $boardTitle == $pageTitle ) {
+			return;
+		}
+
+		$core = new Core();
+		switch ( $action ) {
+			case 'new-post':
+				$topic = $newWikitext;
+				if ( isset( $topicTitle ) && $topicTitle ) {
+					$topic = LinkRenderer::makeLink( $topicTitle->getFullUrl(), $newWikitext );
+				}
+				$msg = Core::msg( 'discordnotifications-flow-new-topic',
+					$userLink,
+					$topic,
+					LinkRenderer::makeLink( $boardTitle->getFullUrl(), $boardPrefixedTitleText )
+				);
+				break;
+			case 'edit-post':
+				$msg = Core::msg( 'discordnotifications-flow-edit-post',
+					$userLink,
+					LinkRenderer::makeLink( $pageTitle->getFullUrl(),
+						Core::flowUUIDToTitleText( $pageTitleText ) )
+					# TODO use LinkRenderer::makeLink( $boardTitle->getFullUrl(), $boardPrefixedTitleText )
+				);
+				break;
+			case 'reply':
+				$msg = Core::msg( 'discordnotifications-flow-reply',
+					$userLink,
+					LinkRenderer::makeLink( $pageTitle->getFullUrl(),
+						Core::flowUUIDToTitleText( $pageTitleText ) )
+					# TODO use LinkRenderer::makeLink( $boardTitle->getFullUrl(), $boardPrefixedTitleText )
+				);
+				break;
+			case 'edit-title':
+				$msg = Core::msg( 'discordnotifications-flow-edit-title',
+					$userLink,
+					# TODO use $oldWikitext
+					LinkRenderer::makeLink( $boardTitle->getFullUrl(), $boardPrefixedTitleText ),
+					LinkRenderer::makeLink( $pageTitle->getFullUrl(), $newWikitext )
+				);
+				break;
+			case 'create-topic-summary':
+			case 'edit-topic-summary':
+				$msg = Core::msg( 'discordnotifications-flow-edit-header',
+					$userLink,
+					LinkRenderer::makeLink( $pageTitle->getFullUrl(),
+						Core::flowUUIDToTitleText( $pageTitleText ) )
+					# TODO use LinkRenderer::makeLink( $boardTitle->getFullUrl(), $boardPrefixedTitleText )
+				);
+				break;
+			default:
+				return;
+		}
+		$core->pushDiscordNotify( $msg, $user, 'flow' );
 	}
 
 	/**
