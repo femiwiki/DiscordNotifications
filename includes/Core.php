@@ -208,11 +208,14 @@ class Core {
 	}
 
 	/**
-	 * @param string $uuid
+	 * @param string|UUID $uuid
 	 * @return string
 	 */
-	public static function flowUUIDToTitleText( string $uuid ) {
-		$uuid = UUID::create( $uuid );
+	public static function flowUUIDToTitleText( $uuid ) {
+		if ( is_string( $uuid ) ) {
+			$uuid = strtolower( $uuid );
+			$uuid = UUID::create( $uuid );
+		}
 		$collection = \Flow\Collection\PostCollection::newFromId( $uuid );
 		$revision = $collection->getLastRevision();
 		return $revision->getContent( 'topic-title-plaintext' );
