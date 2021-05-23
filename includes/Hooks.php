@@ -459,12 +459,15 @@ class Hooks implements
 			return;
 		}
 
-		# It is tricky but possible to fetch the topic if the below condition matches.
-		# This must be done before the any call of $vars->getVar().
-		$newWikitext = $vars->mVars['new_wikitext'];
-		if ( $vars->mVars['action'] == 'new-post' && $newWikitext instanceof AFComputedVariable ) {
-			$rev = $newWikitext->mParameters['revision'];
-			$topicTitle = Title::newFromText( $rev->getPostId()->getAlphadecimal(), NS_TOPIC );
+		// Do not ruin Flow\Tests\Api\Api*Test
+		if ( !defined( 'MW_PHPUNIT_TEST' ) ) {
+			// It is tricky but possible to fetch the topic if the below condition matches.
+			// This must be done before the any call of $vars->getVar().
+			$newWikitext = $vars->mVars['new_wikitext'];
+			if ( $vars->mVars['action'] == 'new-post' && $newWikitext instanceof AFComputedVariable ) {
+				$rev = $newWikitext->mParameters['revision'];
+				$topicTitle = Title::newFromText( $rev->getPostId()->getAlphadecimal(), NS_TOPIC );
+			}
 		}
 
 		$userLink = LinkRenderer::getDiscordUserText( $user );
@@ -474,8 +477,14 @@ class Hooks implements
 		$pagePrefixedTitleText = $vars->getVar( 'page_prefixedtitle' )->data;
 		$boardTitle = Title::newFromText( $boardPrefixedTitleText );
 		$pageTitle = Title::newFromText( $pagePrefixedTitleText );
-		$oldWikitext = $vars->getVar( 'old_wikitext' )->data;
-		$newWikitext = $vars->getVar( 'new_wikitext' )->data;
+		if ( defined( 'MW_PHPUNIT_TEST' ) ) {
+			// Do not ruin Flow\Tests\Api\Api*Test
+			$oldWikitext = '';
+			$newWikitext = '';
+		} else {
+			$oldWikitext = $vars->getVar( 'old_wikitext' )->data;
+			$newWikitext = $vars->getVar( 'new_wikitext' )->data;
+		}
 
 		// Skip notifications if the reply is the first, in fact non a "re"-ply.
 		// The first reply is a content of the topic.
@@ -487,7 +496,7 @@ class Hooks implements
 		switch ( $action ) {
 			case 'new-post':
 				$topic = $newWikitext;
-				if ( $topicTitle ) {
+				if ( isset( $topicTitle ) && $topicTitle ) {
 					$topic = LinkRenderer::makeLink( $topicTitle->getFullUrl(), $newWikitext );
 				}
 				$msg = Core::msg( 'discordnotifications-flow-new-topic',
