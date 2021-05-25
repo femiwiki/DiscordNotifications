@@ -484,6 +484,10 @@ class Hooks implements
 		} else {
 			$oldWikitext = $vars->getVar( 'old_wikitext' )->data;
 			$newWikitext = $vars->getVar( 'new_wikitext' )->data;
+			if ( $action == 'new-post' && $newWikitext ) {
+				// new-post action gives unparsed wikitext as newWikitext which cannot be handled by Discord
+				$newWikitext = preg_replace( '/\[\[[^|]+\|([^\]]+)\]\]/', '$1', $newWikitext );
+			}
 		}
 
 		// Skip notifications if the reply is the first, in fact non a "re"-ply.
