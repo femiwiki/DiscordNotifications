@@ -2,12 +2,14 @@
 
 namespace MediaWiki\Extension\DiscordNotifications;
 
-use AbuseFilterVariableHolder;
-use AFComputedVariable;
 use APIBase;
 use Config;
 use Exception;
 use ExtensionRegistry;
+use Flow\Conversion\Utils;
+use MediaWiki\Extension\AbuseFilter\Variables\LazyLoadedVariable;
+use MediaWiki\Extension\AbuseFilter\Variables\LazyVariableComputer;
+use MediaWiki\Extension\AbuseFilter\Variables\VariableHolder;
 use MediaWiki\MediaWikiServices;
 use SpecialPage;
 use Title;
@@ -15,6 +17,7 @@ use User;
 
 class Hooks implements
 	\MediaWiki\Auth\Hook\LocalUserCreatedHook,
+	\MediaWiki\Extension\AbuseFilter\Hooks\AbuseFilterShouldFilterActionHook,
 	\MediaWiki\Hook\AfterImportPageHook,
 	\MediaWiki\Hook\BlockIpCompleteHook,
 	\MediaWiki\Hook\PageMoveCompleteHook,
@@ -31,6 +34,11 @@ class Hooks implements
 	private $config;
 
 	/**
+	 * @var LazyVariableComputer
+	 */
+	private $lazyVariableComputer;
+
+	/**
 	 * @var Core
 	 */
 	private $core;
@@ -39,9 +47,11 @@ class Hooks implements
 	 * @param Config $config
 	 */
 	public function __construct(
-		Config $config
+		Config $config,
+		LazyVariableComputer $lazyVariableComputer
 	) {
 		$this->config = $config;
+		$this->lazyVariableComputer = $lazyVariableComputer;
 		$this->core = new Core();
 	}
 
@@ -437,14 +447,14 @@ class Hooks implements
 	/**
 	 * self::APIFlowAfterExecute() is not triggered if the browser of the user does not support JavaScript.
 	 * To avoid that cases, we use this AbuseFilter hook if the extension is loaded.
-	 * @param AbuseFilterVariableHolder $vars
+	 * @param VariableHolder $vars
 	 * @param Title $title Title object target of the action
 	 * @param User $user User object performer of the action
 	 * @param array &$skipReasons Array of reasons why the action should be skipped
 	 * @return bool|void True or no return value to continue or false to abort
 	 */
-	public static function onAbuseFilterShouldFilterAction(
-		AbuseFilterVariableHolder $vars,
+	public function onAbuseFilterShouldFilterAction(
+		VariableHolder $vars,
 		Title $title,
 		User $user,
 		array &$skipReasons
@@ -459,36 +469,13 @@ class Hooks implements
 			return;
 		}
 
-		// Do not ruin Flow\Tests\Api\Api*Test
-		if ( !defined( 'MW_PHPUNIT_TEST' ) ) {
-			// It is tricky but possible to fetch the topic if the below condition matches.
-			// This must be done before the any call of $vars->getVar().
-			$newWikitext = $vars->mVars['new_wikitext'];
-			if ( $vars->mVars['action'] == 'new-post' && $newWikitext instanceof AFComputedVariable ) {
-				$rev = $newWikitext->mParameters['revision'];
-				$topicTitle = Title::newFromText( $rev->getPostId()->getAlphadecimal(), NS_TOPIC );
-			}
-		}
-
 		$userLink = LinkRenderer::getDiscordUserText( $user );
-		$action = $vars->getVar( 'action' )->data;
-		$pageTitleText = $vars->getVar( 'page_title' )->data;
-		$boardPrefixedTitleText = $vars->getVar( 'board_prefixedtitle' )->data;
-		$pagePrefixedTitleText = $vars->getVar( 'page_prefixedtitle' )->data;
+		$action = $vars->getComputedVariable( 'action' )->data;
+		$pageTitleText = $vars->getComputedVariable( 'page_title' )->data;
+		$boardPrefixedTitleText = $vars->getComputedVariable( 'board_prefixedtitle' )->data;
+		$pagePrefixedTitleText = $vars->getComputedVariable( 'page_prefixedtitle' )->data;
 		$boardTitle = Title::newFromText( $boardPrefixedTitleText );
 		$pageTitle = Title::newFromText( $pagePrefixedTitleText );
-		if ( defined( 'MW_PHPUNIT_TEST' ) ) {
-			// Do not ruin Flow\Tests\Api\Api*Test
-			$oldWikitext = '';
-			$newWikitext = '';
-		} else {
-			$oldWikitext = $vars->getVar( 'old_wikitext' )->data;
-			$newWikitext = $vars->getVar( 'new_wikitext' )->data;
-			if ( $action == 'new-post' && $newWikitext ) {
-				// new-post action gives unparsed wikitext as newWikitext which cannot be handled by Discord
-				$newWikitext = preg_replace( '/\[\[[^|]+\|([^\]]+)\]\]/', '$1', $newWikitext );
-			}
-		}
 
 		// Skip notifications if the reply is the first, in fact non a "re"-ply.
 		// The first reply is a content of the topic.
@@ -499,13 +486,15 @@ class Hooks implements
 		$core = new Core();
 		switch ( $action ) {
 			case 'new-post':
-				$topic = $newWikitext;
-				if ( isset( $topicTitle ) && $topicTitle ) {
-					$topic = LinkRenderer::makeLink( $topicTitle->getFullUrl(), $newWikitext );
-				}
+				$newWikitext = $vars->getVars()['new_wikitext'];
+				$titleText = $newWikitext->getParameters()['revision']->getPostId()->getAlphadecimal();
+				$title = Title::newFromText( $titleText, NS_TOPIC );
+				$topicText = $this->lazyVariableComputer->compute( $newWikitext, $vars, static function() {} )->data;
+				$topicText = Utils::convert( 'topic-title-wikitext', 'topic-title-plaintext', $topicText, $title );
+
 				$msg = Core::msg( 'discordnotifications-flow-new-topic',
 					$userLink,
-					$topic,
+					LinkRenderer::makeLink( $title->getFullUrl(), $topicText ),
 					LinkRenderer::makeLink( $boardTitle->getFullUrl(), $boardPrefixedTitleText )
 				);
 				break;

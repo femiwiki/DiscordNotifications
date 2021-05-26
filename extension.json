@@ -15,7 +15,7 @@
     "DiscordNotifications": ["i18n"]
   },
   "Hooks": {
-    "AbuseFilterShouldFilterAction": "MediaWiki\\Extension\\DiscordNotifications\\Hooks::onAbuseFilterShouldFilterAction",
+    "AbuseFilterShouldFilterAction": "main",
     "AfterImportPage": "main",
     "APIFlowAfterExecute": "MediaWiki\\Extension\\DiscordNotifications\\Hooks::onAPIFlowAfterExecute",
     "ArticleDeleteComplete": "main",
@@ -30,7 +30,7 @@
   "HookHandlers": {
     "main": {
       "class": "MediaWiki\\Extension\\DiscordNotifications\\Hooks",
-      "services": ["MainConfig"]
+      "services": ["MainConfig", "AbuseFilterLazyVariableComputer"]
     }
   },
   "config": {
