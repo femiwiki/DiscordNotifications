@@ -7,7 +7,7 @@ use Config;
 use Exception;
 use ExtensionRegistry;
 use Flow\Conversion\Utils;
-use MediaWiki\Extension\AbuseFilter\Variables\LazyVariableComputer;
+use MediaWiki\Extension\AbuseFilter\AbuseFilterServices;
 use MediaWiki\Extension\AbuseFilter\Variables\VariableHolder;
 use MediaWiki\MediaWikiServices;
 use SpecialPage;
@@ -33,25 +33,15 @@ class Hooks implements
 	private $config;
 
 	/**
-	 * @var LazyVariableComputer
-	 */
-	private $lazyVariableComputer;
-
-	/**
 	 * @var Core
 	 */
 	private $core;
 
 	/**
 	 * @param Config $config
-	 * @param LazyVariableComputer $lazyVariableComputer
 	 */
-	public function __construct(
-		Config $config,
-		LazyVariableComputer $lazyVariableComputer
-	) {
+	public function __construct( Config $config ) {
 		$this->config = $config;
-		$this->lazyVariableComputer = $lazyVariableComputer;
 		$this->core = new Core();
 	}
 
@@ -489,8 +479,8 @@ class Hooks implements
 				$newWikitext = $vars->getVars()['new_wikitext'];
 				$titleText = $newWikitext->getParameters()['revision']->getPostId()->getAlphadecimal();
 				$title = Title::newFromText( $titleText, NS_TOPIC );
-				$topicText = $this->lazyVariableComputer->compute( $newWikitext, $vars, static function () {
-				} )->data;
+				$varManager = AbuseFilterServices::getVariablesManager();
+				$topicText = $varManager->getVar( $vars, 'new_wikitext' )->toString();
 				$topicText = Utils::convert( 'topic-title-wikitext', 'topic-title-plaintext', $topicText, $title );
 
 				$msg = Core::msg( 'discordnotifications-flow-new-topic',
@@ -516,6 +506,8 @@ class Hooks implements
 				);
 				break;
 			case 'edit-title':
+				$varManager = AbuseFilterServices::getVariablesManager();
+				$newWikitext = $varManager->getVar( $vars, 'new_wikitext' )->toString();
 				$msg = Core::msg( 'discordnotifications-flow-edit-title',
 					$userLink,
 					# TODO use $oldWikitext
