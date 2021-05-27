@@ -459,6 +459,11 @@ class Hooks implements
 			return;
 		}
 
+		// Avoid AbuseFilterConsequences test failures
+		if ( defined( 'MW_PHPUNIT_TEST' ) ) {
+			return;
+		}
+
 		$userLink = LinkRenderer::getDiscordUserText( $user );
 		$action = $vars->getComputedVariable( 'action' )->data;
 		$pageTitleText = $vars->getComputedVariable( 'page_title' )->data;
