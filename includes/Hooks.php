@@ -449,7 +449,7 @@ class Hooks implements
 		User $user,
 		array &$skipReasons
 	) {
-		$action = $vars->getComputedVariable( 'action' )->data;
+		$action = $vars->getVar( 'action' )->data;
 		if ( !in_array( $action, [ 'new-topic', 'edit-header', 'edit-post', 'edit-title', 'edit-topic-summary',
 				'reply' ] )
 		) {
@@ -477,7 +477,6 @@ class Hooks implements
 		}
 
 		$userLink = LinkRenderer::getDiscordUserText( $user );
-		$action = $vars->getVar( 'action' )->data;
 		$pageTitleText = $vars->getVar( 'page_title' )->data;
 		$boardPrefixedTitleText = $vars->getVar( 'board_prefixedtitle' )->data;
 		$pagePrefixedTitleText = $vars->getVar( 'page_prefixedtitle' )->data;
