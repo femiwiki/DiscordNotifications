@@ -449,14 +449,14 @@ class Hooks implements
 		User $user,
 		array &$skipReasons
 	) {
-		global $wgDiscordNotificationsActions;
-
+		$action = $vars->getComputedVariable( 'action' )->data;
 		if ( !in_array( $action, [ 'new-topic', 'edit-header', 'edit-post', 'edit-title', 'edit-topic-summary',
 				'reply' ] )
 		) {
 			return;
 		}
 
+		global $wgDiscordNotificationsActions;
 		if ( !$wgDiscordNotificationsActions['flow'] || !ExtensionRegistry::getInstance()->isLoaded( 'Flow' ) ) {
 			return;
 		}
