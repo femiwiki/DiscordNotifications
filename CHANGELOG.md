@@ -2,7 +2,11 @@
 
 Versions and bullets are arranged chronologically from latest to oldest.
 
-## 1.0.2-femiwiki
+## v1.0.3-femiwiki
+
+- Fix unsent message on new Flow post.
+
+## v1.0.2-femiwiki
 
 Note: this version requires MediaWiki 1.36+. Earlier versions are no longer supported.
 If you still use those versions of MediaWiki, please use REL1_35 branch instead of this release.
