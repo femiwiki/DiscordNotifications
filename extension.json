@@ -1,12 +1,12 @@
 {
   "name": "DiscordNotifications",
-  "version": "1.0.1-femiwiki",
+  "version": "1.0.2-femiwiki",
   "author": "Aleksi Postari",
   "url": "https://github.com/femiwiki/DiscordNotifications",
   "descriptionmsg": "discordnotifications-desc",
   "type": "other",
   "requires": {
-    "MediaWiki": ">= 1.35.0"
+    "MediaWiki": ">= 1.36.0"
   },
   "AutoloadNamespaces": {
     "MediaWiki\\Extension\\DiscordNotifications\\": "includes/"
