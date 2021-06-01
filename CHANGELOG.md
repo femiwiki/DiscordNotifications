@@ -2,6 +2,10 @@
 
 Versions and bullets are arranged chronologically from latest to oldest.
 
+## Unreleased
+
+- Fix ignored create-topic-summary action. (https://github.com/femiwiki/DiscordNotifications/issues/18)
+
 ## v1.0.3-femiwiki
 
 - Fix unsent message on new Flow post.
