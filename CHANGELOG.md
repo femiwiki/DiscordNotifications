@@ -2,7 +2,7 @@
 
 Versions and bullets are arranged chronologically from latest to oldest.
 
-## Unreleased
+## v1.0.4-femiwiki
 
 - Fix ignored create-topic-summary action. (https://github.com/femiwiki/DiscordNotifications/issues/18)
 
