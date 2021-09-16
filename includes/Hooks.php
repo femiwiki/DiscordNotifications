@@ -73,9 +73,6 @@ class Hooks implements
 		}
 
 		$user = $this->userFactory->newFromUserIdentity( $user );
-		if ( $user->getId() == 0 ) {
-			return;
-		}
 
 		if ( $summary != '' ) {
 			$summary = wfMessage( 'discordnotifications-summary', $summary )->inContentLanguage()->plain();
