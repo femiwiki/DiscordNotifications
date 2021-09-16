@@ -1,7 +1,6 @@
 <?php
 namespace MediaWiki\Extension\DiscordNotifications;
 
-use MediaWiki\User\UserIdentity;
 use SpecialPage;
 use Title;
 use User;
