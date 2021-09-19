@@ -4,6 +4,7 @@ namespace MediaWiki\Extension\DiscordNotifications;
 
 use Flow\Model\UUID;
 use MediaWiki\Logger\LoggerFactory;
+use MediaWiki\MediaWikiServices;
 use MessageSpecifier;
 use Psr\Log\LoggerInterface;
 use Title;
@@ -94,14 +95,25 @@ class Core {
 		}
 
 		foreach ( $hooks as $hook ) {
-			if ( $wgDiscordNotificationsSendMethod == 'file_get_contents' ) {
-				// Use file_get_contents to send the data. Note that you will need to have allow_url_fopen
-				// enabled in php.ini for this to work.
-				self::sendHttpRequest( $hook, $post );
-			} else {
-				// Call the Discord API through cURL (default way). Note that you will need to have cURL
-				// enabled for this to work.
-				self::sendCurlRequest( $hook, $post );
+			switch ( $wgDiscordNotificationsSendMethod ) {
+				case 'MWHttpRequest':
+					self::sendMWHttpRequest( $hook, $post );
+					break;
+				case 'file_get_contents':
+					self::getLogger()->warning(
+						'\'file_get_contents\' for \$wgDiscordNotificationsSendMethod is deprecated' );
+					// Use file_get_contents to send the data. Note that you will need to have allow_url_fopen
+					// enabled in php.ini for this to work.
+					self::sendHttpRequest( $hook, $post );
+					break;
+				case 'curl':
+					self::getLogger()->warning( '\'curl\' for \$wgDiscordNotificationsSendMethod is deprecated' );
+					// Call the Discord API through cURL (default way). Note that you will need to have cURL
+					// enabled for this to work.
+					self::sendCurlRequest( $hook, $post );
+					break;
+				default:
+					self::getLogger()->warning( "Unknown send method: $wgDiscordNotificationsSendMethod" );
 			}
 		}
 	}
@@ -175,6 +187,28 @@ class Core {
 		// ... And execute the curl script!
 		$_ = curl_exec( $h );
 		curl_close( $h );
+	}
+
+	/**
+	 * @param string $url
+	 * @param string $postData
+	 */
+	private static function sendMWHttpRequest( $url, $postData ) {
+		$httpRequestFactory = MediaWikiServices::getInstance()->getHttpRequestFactory();
+		$req = $httpRequestFactory->create(
+			$url,
+			[
+				'method' => 'POST',
+				'postData' => $postData
+			],
+			__METHOD__
+		);
+		$req->setHeader( 'Content-Type', 'application/json' );
+
+		$status = $req->execute();
+		if ( !$status->isOK() ) {
+			// TODO: Print log
+		}
 	}
 
 	/**
