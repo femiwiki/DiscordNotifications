@@ -71,7 +71,7 @@ class CoreTest extends MediaWikiIntegrationTestCase {
 		$excluded = array_merge( $wgDiscordNotificationsExclude, [ 'permissions' => $excluded ] );
 		$this->setMwGlobals( 'wgDiscordNotificationsExclude', $excluded );
 		$user = $this->getTestUser()->getUser();
-		$this->assertSame( $this->core->pushDiscordNotify( '', $user, 'article_saved' ) === $expected );
+		$this->assertSame( $expected, $this->core->pushDiscordNotify( '', $user, 'article_saved' ) );
 	}
 
 	/**
