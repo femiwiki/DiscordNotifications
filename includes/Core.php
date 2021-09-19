@@ -67,6 +67,10 @@ class Core {
 		global $wgDiscordNotificationsIncomingWebhookUrl, $wgDiscordNotificationsSendMethod,
 			$wgDiscordNotificationsExclude;
 
+		if ( defined( 'MW_PHPUNIT_TEST' ) ) {
+			self::$lastMessage = $message;
+		}
+
 		if ( !in_array( $wgDiscordNotificationsSendMethod, [ 'MWHttpRequest', 'file_get_contents', 'curl' ] ) ) {
 			self::getLogger()->warning( "Unknown send method: $wgDiscordNotificationsSendMethod" );
 			return false;
@@ -94,7 +98,6 @@ class Core {
 		}
 
 		if ( defined( 'MW_PHPUNIT_TEST' ) ) {
-			self::$lastMessage = $message;
 			return;
 		}
 
