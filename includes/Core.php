@@ -56,6 +56,26 @@ class Core {
 	}
 
 	/**
+	 * Returns whether the given user should be excluded
+	 * @param User $user
+	 * @return bool
+	 */
+	public static function userIsExcluded( User $user ) {
+		global $wgDiscordNotificationsExclude;
+
+		$permissions = $wgDiscordNotificationsExclude['permissions'];
+		if ( !is_array( $permissions ) ) {
+			$permissions = [ $permissions ];
+		}
+		foreach ( $permissions as $p ) {
+			if ( $user->isAllowed( $p ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
 	 * Sends the message into Discord room.
 	 * @param string $message to be sent.
 	 * @param User|null $user
@@ -64,8 +84,7 @@ class Core {
 	 * @see https://discordapp.com/developers/docs/resources/webhook#execute-webhook
 	 */
 	public function pushDiscordNotify( string $message, $user, string $action ) {
-		global $wgDiscordNotificationsIncomingWebhookUrl, $wgDiscordNotificationsSendMethod,
-			$wgDiscordNotificationsExclude;
+		global $wgDiscordNotificationsIncomingWebhookUrl, $wgDiscordNotificationsSendMethod;
 
 		if ( defined( 'MW_PHPUNIT_TEST' ) ) {
 			self::$lastMessage = $message;
@@ -85,16 +104,8 @@ class Core {
 		}
 
 		// Users with the permission suppress notifications
-		if ( $user && $user instanceof User ) {
-			$permissions = $wgDiscordNotificationsExclude['permissions'];
-			if ( !is_array( $permissions ) ) {
-				$permissions = [ $permissions ];
-			}
-			foreach ( $permissions as $p ) {
-				if ( $user->isAllowed( $p ) ) {
-					return false;
-				}
-			}
+		if ( $user && $user instanceof User && self::userIsExcluded( $user ) ) {
+			return false;
 		}
 
 		if ( defined( 'MW_PHPUNIT_TEST' ) ) {
