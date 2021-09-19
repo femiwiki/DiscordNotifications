@@ -67,6 +67,19 @@ class Core {
 		global $wgDiscordNotificationsIncomingWebhookUrl, $wgDiscordNotificationsSendMethod,
 			$wgDiscordNotificationsExclude;
 
+		if ( !in_array( $wgDiscordNotificationsSendMethod, [ 'MWHttpRequest', 'file_get_contents', 'curl' ] ) ) {
+			self::getLogger()->warning( "Unknown send method: $wgDiscordNotificationsSendMethod" );
+			return false;
+		}
+
+		$hooks = $wgDiscordNotificationsIncomingWebhookUrl;
+		if ( !$hooks ) {
+			self::getLogger()->warning( '$wgDiscordNotificationsIncomingWebhookUrl is not set' );
+			return false;
+		} elseif ( is_string( $hooks ) ) {
+			$hooks = [ $hooks ];
+		}
+
 		// Users with the permission suppress notifications
 		if ( $user && $user instanceof User ) {
 			$permissions = $wgDiscordNotificationsExclude['permissions'];
@@ -80,16 +93,12 @@ class Core {
 			}
 		}
 
-		$post = $this->makePost( $message, $action );
-
-		$hooks = $wgDiscordNotificationsIncomingWebhookUrl;
-		if ( !$hooks ) {
-			self::getLogger()->warning( '$wgDiscordNotificationsIncomingWebhookUrl is not set' );
-			return false;
-		} elseif ( is_string( $hooks ) ) {
-			$hooks = [ $hooks ];
+		if ( defined( 'MW_PHPUNIT_TEST' ) ) {
+			self::$lastMessage = $message;
+			return;
 		}
 
+		$post = $this->makePost( $message, $action );
 		foreach ( $hooks as $hook ) {
 			switch ( $wgDiscordNotificationsSendMethod ) {
 				case 'MWHttpRequest':
@@ -107,9 +116,6 @@ class Core {
 					// enabled for this to work.
 					self::sendCurlRequest( $hook, $post );
 					break;
-				default:
-					self::getLogger()->warning( "Unknown send method: $wgDiscordNotificationsSendMethod" );
-					return false;
 			}
 		}
 	}
@@ -159,11 +165,6 @@ class Core {
 	 * @param string $postData
 	 */
 	private static function sendCurlRequest( $url, $postData ) {
-		if ( defined( 'MW_PHPUNIT_TEST' ) ) {
-			self::$lastMessage = $message;
-			return;
-		}
-
 		$h = curl_init();
 		foreach ( [
 			CURLOPT_URL => $url,
@@ -196,11 +197,6 @@ class Core {
 	 * @return void|bool
 	 */
 	private static function sendMWHttpRequest( $url, $postData ) {
-		if ( defined( 'MW_PHPUNIT_TEST' ) ) {
-			self::$lastMessage = $message;
-			return;
-		}
-
 		$httpRequestFactory = MediaWikiServices::getInstance()->getHttpRequestFactory();
 		$req = $httpRequestFactory->create(
 			$url,
@@ -224,11 +220,6 @@ class Core {
 	 * @param string $postData
 	 */
 	private static function sendHttpRequest( $url, $postData ) {
-		if ( defined( 'MW_PHPUNIT_TEST' ) ) {
-			self::$lastMessage = $message;
-			return;
-		}
-
 		$extra = [
 			'http' => [
 				'header'  => 'Content-type: application/json',
