@@ -113,13 +113,10 @@ class CoreTest extends MediaWikiIntegrationTestCase {
 		$this->assertFalse( $core->pushDiscordNotify( '', null, 'article_saved' ) );
 
 		$this->setMwGlobals( 'wgDiscordNotificationsIncomingWebhookUrl', 'http://127.0.0.1/webhook' );
-		$this->assertFalse( $core->pushDiscordNotify( '', null, 'article_saved' ) );
+		$this->assertNull( $core->pushDiscordNotify( '', null, 'article_saved' ) );
 
 		$this->setMwGlobals( 'wgDiscordNotificationsSendMethod', 'random' );
 		$this->assertFalse( $core->pushDiscordNotify( '', null, 'article_saved' ) );
-
-		$this->setMwGlobals( 'wgDiscordNotificationsSendMethod', 'MWHttpRequest' );
-		$this->assertNull( $core->pushDiscordNotify( '', null, 'article_saved' ) );
 	}
 
 	public function testDiscordNotifications() {
