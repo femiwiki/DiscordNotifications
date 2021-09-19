@@ -80,11 +80,6 @@ class Core {
 			}
 		}
 
-		if ( defined( 'MW_PHPUNIT_TEST' ) ) {
-			self::$lastMessage = $message;
-			return;
-		}
-
 		$post = $this->makePost( $message, $action );
 
 		$hooks = $wgDiscordNotificationsIncomingWebhookUrl;
@@ -164,6 +159,11 @@ class Core {
 	 * @param string $postData
 	 */
 	private static function sendCurlRequest( $url, $postData ) {
+		if ( defined( 'MW_PHPUNIT_TEST' ) ) {
+			self::$lastMessage = $message;
+			return;
+		}
+
 		$h = curl_init();
 		foreach ( [
 			CURLOPT_URL => $url,
@@ -196,6 +196,11 @@ class Core {
 	 * @return void|bool
 	 */
 	private static function sendMWHttpRequest( $url, $postData ) {
+		if ( defined( 'MW_PHPUNIT_TEST' ) ) {
+			self::$lastMessage = $message;
+			return;
+		}
+
 		$httpRequestFactory = MediaWikiServices::getInstance()->getHttpRequestFactory();
 		$req = $httpRequestFactory->create(
 			$url,
@@ -219,6 +224,11 @@ class Core {
 	 * @param string $postData
 	 */
 	private static function sendHttpRequest( $url, $postData ) {
+		if ( defined( 'MW_PHPUNIT_TEST' ) ) {
+			self::$lastMessage = $message;
+			return;
+		}
+
 		$extra = [
 			'http' => [
 				'header'  => 'Content-type: application/json',
