@@ -107,6 +107,22 @@ class CoreTest extends MediaWikiIntegrationTestCase {
 		);
 	}
 
+	/**
+	 * @covers \MediaWiki\Extension\DiscordNotifications\Core::pushDiscordNotify
+	 */
+	public function testPushDiscordNotify() {
+		$this->assertFalse( $this->core->pushDiscordNotify( '', null, 'article_saved' ) );
+
+		$this->setMwGlobals( 'wgDiscordNotificationsIncomingWebhookUrl', 'http://127.0.0.1/webhook' );
+		$this->assertFalse( $this->core->pushDiscordNotify( '', null, 'article_saved' ) );
+
+		$this->setMwGlobals( 'wgDiscordNotificationsSendMethod', 'random' );
+		$this->assertFalse( $this->core->pushDiscordNotify( '', null, 'article_saved' ) );
+
+		$this->setMwGlobals( 'wgDiscordNotificationsSendMethod', 'MWHttpRequest' );
+		$this->assertNull( $this->core->pushDiscordNotify( '', null, 'article_saved' ) );
+	}
+
 	public function testDiscordNotifications() {
 		$this->setMwGlobals( [
 			'wgDiscordNotificationsIncomingWebhookUrl' => 'https:// webhook',

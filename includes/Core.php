@@ -60,6 +60,7 @@ class Core {
 	 * @param string $message to be sent.
 	 * @param User|null $user
 	 * @param string $action
+	 * @return void|bool
 	 * @see https://discordapp.com/developers/docs/resources/webhook#execute-webhook
 	 */
 	public function pushDiscordNotify( string $message, $user, string $action ) {
@@ -89,7 +90,7 @@ class Core {
 		$hooks = $wgDiscordNotificationsIncomingWebhookUrl;
 		if ( !$hooks ) {
 			self::getLogger()->warning( '$wgDiscordNotificationsIncomingWebhookUrl is not set' );
-			return;
+			return false;
 		} elseif ( is_string( $hooks ) ) {
 			$hooks = [ $hooks ];
 		}
@@ -97,8 +98,7 @@ class Core {
 		foreach ( $hooks as $hook ) {
 			switch ( $wgDiscordNotificationsSendMethod ) {
 				case 'MWHttpRequest':
-					self::sendMWHttpRequest( $hook, $post );
-					break;
+					return self::sendMWHttpRequest( $hook, $post );
 				case 'file_get_contents':
 					self::getLogger()->warning(
 						'\'file_get_contents\' for \$wgDiscordNotificationsSendMethod is deprecated' );
@@ -114,6 +114,7 @@ class Core {
 					break;
 				default:
 					self::getLogger()->warning( "Unknown send method: $wgDiscordNotificationsSendMethod" );
+					return false;
 			}
 		}
 	}
@@ -192,6 +193,7 @@ class Core {
 	/**
 	 * @param string $url
 	 * @param string $postData
+	 * @return void|bool
 	 */
 	private static function sendMWHttpRequest( $url, $postData ) {
 		$httpRequestFactory = MediaWikiServices::getInstance()->getHttpRequestFactory();
@@ -208,6 +210,7 @@ class Core {
 		$status = $req->execute();
 		if ( !$status->isOK() ) {
 			self::getLogger()->warning( $status->getMessage() );
+			return false;
 		}
 	}
 
