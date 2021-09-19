@@ -56,9 +56,9 @@ class CoreTest extends MediaWikiIntegrationTestCase {
 
 	public static function providerPermissions() {
 		return [
-			[ 'not-exist', true ],
+			[ 'not-exist', null ],
 			[ 'read', false ],
-			[ [ 'not-exist' ], true ],
+			[ [ 'not-exist' ], null ],
 			[ [ 'read' ], false ],
 		];
 	}
@@ -71,9 +71,7 @@ class CoreTest extends MediaWikiIntegrationTestCase {
 		$excluded = array_merge( $wgDiscordNotificationsExclude, [ 'permissions' => $excluded ] );
 		$this->setMwGlobals( 'wgDiscordNotificationsExclude', $excluded );
 		$user = $this->getTestUser()->getUser();
-		$arbitrary = 'test' . time() . rand();
-		$this->core->pushDiscordNotify( $arbitrary, $user, 'article_saved' );
-		$this->assertSame( $expected, Core::$lastMessage === $arbitrary );
+		$this->assertSame( $this->core->pushDiscordNotify( '', $user, 'article_saved' ) === $expected );
 	}
 
 	/**

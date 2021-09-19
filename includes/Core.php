@@ -60,7 +60,7 @@ class Core {
 	 * @param string $message to be sent.
 	 * @param User|null $user
 	 * @param string $action
-	 * @return void|bool
+	 * @return void|bool returns false if there is no output.
 	 * @see https://discordapp.com/developers/docs/resources/webhook#execute-webhook
 	 */
 	public function pushDiscordNotify( string $message, $user, string $action ) {
@@ -92,7 +92,7 @@ class Core {
 			}
 			foreach ( $permissions as $p ) {
 				if ( $user->isAllowed( $p ) ) {
-					return;
+					return false;
 				}
 			}
 		}
