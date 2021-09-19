@@ -207,7 +207,7 @@ class Core {
 
 		$status = $req->execute();
 		if ( !$status->isOK() ) {
-			// TODO: Print log
+			self::getLogger()->warning( $status->getMessage() );
 		}
 	}
 
