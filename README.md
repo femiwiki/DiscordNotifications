@@ -1,5 +1,7 @@
 # DiscordNotifications [![Github checks status]][github checks link] [![codecov.io status]][codecov.io link]
 
+:warning: This fork project will be abandoned in favor of [DiscordRCFeeds](https://github.com/femiwiki/DiscordRCFeed) which provides almost the same or more flexible experience.
+
 This is a fork of [kulttuuri/DiscordNotifications] which is an extension for [MediaWiki](https://www.mediawiki.org/wiki/MediaWiki) that sends notifications of actions in your Wiki like editing, adding or removing a page into [Discord](https://discordapp.com/) channel.
 
 ## Supported MediaWiki operations to send notifications
